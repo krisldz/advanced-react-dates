@@ -94,6 +94,9 @@ class CalendarMonth extends React.PureComponent {
     super(props);
 
     this.state = {
+      month: props.month,
+      enableOutsideDays: props.enableOutsideDays,
+      firstDayOfWeek: props.firstDayOfWeek,
       weeks: getCalendarMonthWeeks(
         props.month,
         props.enableOutsideDays,
@@ -109,26 +112,30 @@ class CalendarMonth extends React.PureComponent {
     this.queueSetMonthTitleHeight();
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { month, enableOutsideDays, firstDayOfWeek } = nextProps;
+  static getDerivedStateFromProps(props, state) {
+    const { month, enableOutsideDays, firstDayOfWeek } = props;
     const {
       month: prevMonth,
       enableOutsideDays: prevEnableOutsideDays,
       firstDayOfWeek: prevFirstDayOfWeek,
-    } = this.props;
+    } = state;
     if (
       !month.isSame(prevMonth)
       || enableOutsideDays !== prevEnableOutsideDays
       || firstDayOfWeek !== prevFirstDayOfWeek
     ) {
-      this.setState({
+      return {
+        month,
+        enableOutsideDays,
+        firstDayOfWeek,
         weeks: getCalendarMonthWeeks(
           month,
           enableOutsideDays,
           firstDayOfWeek == null ? moment.localeData().firstDayOfWeek() : firstDayOfWeek,
         ),
-      });
+      };
     }
+    return null;
   }
 
   componentDidUpdate(prevProps) {

@@ -216,7 +216,6 @@ class DayPicker extends React.PureComponent {
 
     this.hasSetInitialVisibleMonth = !props.hidden;
     this.state = {
-      currentMonthScrollTop: null,
       currentMonth,
       monthTransition: null,
       translationValue,
@@ -262,26 +261,41 @@ class DayPicker extends React.PureComponent {
   }
 
   componentDidMount() {
-    const { orientation } = this.props;
     const { currentMonth } = this.state;
 
     const calendarInfoWidth = this.calendarInfo
       ? calculateDimension(this.calendarInfo, 'width', true, true)
       : 0;
-    const currentMonthScrollTop = this.transitionContainer && orientation === VERTICAL_SCROLLABLE
-      ? this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop
-      : null;
 
     this.setState({
       isTouchDevice: isTouchDevice(),
       calendarInfoWidth,
-      currentMonthScrollTop,
     });
 
     this.setCalendarMonthWeeks(currentMonth);
   }
 
-  componentWillReceiveProps(nextProps, nextState) {
+  getSnapshotBeforeUpdate(prevProps, prevState) {
+    const { orientation } = this.props;
+    const { currentMonth } = this.state;
+
+    // Capture the scroll position before the DOM is updated so that, when previous
+    // months are rendered above the current month, we can restore scroll afterwards
+    // (in componentDidUpdate) and keep the previous current month in view. This used
+    // to live in componentWillReceiveProps; getSnapshotBeforeUpdate is the supported
+    // place to read layout right before a commit.
+    if (
+      orientation === VERTICAL_SCROLLABLE
+      && this.transitionContainer
+      && !isSameMonth(prevState.currentMonth, currentMonth)
+    ) {
+      return this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop;
+    }
+
+    return null;
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
     const {
       hidden,
       isFocused,
@@ -290,46 +304,54 @@ class DayPicker extends React.PureComponent {
       orientation,
       renderMonthText,
       horizontalMonthPadding,
-    } = nextProps;
-    const { currentMonth } = this.state;
-    const { currentMonth: nextCurrentMonth } = nextState;
+      daySize,
+      numberOfMonths,
+      transitionDuration,
+      initialVisibleMonth,
+    } = this.props;
+    const {
+      currentMonth,
+      focusedDate,
+      monthTitleHeight,
+    } = this.state;
 
-    if (!hidden) {
+    // ----- migrated from componentWillReceiveProps -----
+    // Only re-sync the visible month in response to a props change (a new props
+    // object from the parent), never on our own setState-driven updates, otherwise
+    // internal state changes (e.g. hover) would call initialVisibleMonth() and could
+    // snap the calendar back to that month.
+    if (prevProps !== this.props && !hidden) {
       if (!this.hasSetInitialVisibleMonth) {
         this.hasSetInitialVisibleMonth = true;
         this.setState({
-          currentMonth: nextProps.initialVisibleMonth(),
+          currentMonth: initialVisibleMonth(),
         });
       } else {
-        const { numberOfMonths } = this.props;
-        const newDate = nextProps.initialVisibleMonth();
+        const newDate = initialVisibleMonth();
         if (!isDayVisible(newDate, currentMonth, numberOfMonths)) {
           this.onMonthChange(newDate);
         }
       }
     }
 
-    const {
-      daySize,
-      isFocused: prevIsFocused,
-      renderMonthText: prevRenderMonthText,
-    } = this.props;
-
-    if (nextProps.daySize !== daySize) {
+    if (daySize !== prevProps.daySize) {
       this.setState({
         calendarMonthWidth: getCalendarMonthWidth(
-          nextProps.daySize,
+          daySize,
           horizontalMonthPadding,
         ),
       });
     }
 
-    if (isFocused !== prevIsFocused) {
+    // Track the focusedDate that this update produces so the container-focus check
+    // below sees the same value componentWillReceiveProps used to set before render.
+    let focusedDateAfterUpdate = focusedDate;
+    if (isFocused !== prevProps.isFocused) {
       if (isFocused) {
-        const focusedDate = this.getFocusedDay(currentMonth);
+        const newFocusedDate = this.getFocusedDay(currentMonth);
 
         let { onKeyboardShortcutsPanelClose } = this.state;
-        if (nextProps.showKeyboardShortcuts) {
+        if (showKeyboardShortcuts) {
           // the ? shortcut came from the input and we should return input there once it is close
           onKeyboardShortcutsPanelClose = onBlur;
         }
@@ -337,42 +359,26 @@ class DayPicker extends React.PureComponent {
         this.setState({
           showKeyboardShortcuts,
           onKeyboardShortcutsPanelClose,
-          focusedDate,
+          focusedDate: newFocusedDate,
           withMouseInteractions: false,
         });
+        focusedDateAfterUpdate = newFocusedDate;
       } else {
         this.setState({ focusedDate: null });
+        focusedDateAfterUpdate = null;
       }
     }
 
-    if (renderMonthText !== null && prevRenderMonthText !== null
-        && renderMonthText(currentMonth) !== prevRenderMonthText(currentMonth)) {
+    if (renderMonthText !== null && prevProps.renderMonthText !== null
+        && renderMonthText(currentMonth) !== prevProps.renderMonthText(currentMonth)) {
       this.setState({
         monthTitleHeight: null,
       });
     }
 
-    // Capture the scroll position so when previous months are rendered above the current month
-    // we can adjust scroll after the component has updated and the previous current month
-    // stays in view.
-    if (
-      orientation === VERTICAL_SCROLLABLE
-      && this.transitionContainer
-      && !isSameMonth(currentMonth, nextCurrentMonth)
-    ) {
-      this.setState({
-        currentMonthScrollTop:
-          this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop,
-      });
-    }
-  }
-
-  componentWillUpdate() {
-    const { transitionDuration } = this.props;
-
-    // Calculating the dimensions trigger a DOM repaint which
-    // breaks the CSS transition.
-    // The setTimeout will wait until the transition ends.
+    // ----- migrated from componentWillUpdate -----
+    // Calculating the dimensions triggers a DOM repaint which breaks the CSS
+    // transition. The setTimeout waits until the transition ends.
     if (this.calendarInfo) {
       this.setCalendarInfoWidthTimeout = setTimeout(() => {
         const { calendarInfoWidth } = this.state;
@@ -384,19 +390,8 @@ class DayPicker extends React.PureComponent {
         }
       }, transitionDuration);
     }
-  }
 
-  componentDidUpdate(prevProps, prevState) {
-    const {
-      orientation, daySize, isFocused, numberOfMonths,
-    } = this.props;
-    const {
-      currentMonth,
-      currentMonthScrollTop,
-      focusedDate,
-      monthTitleHeight,
-    } = this.state;
-
+    // ----- existing componentDidUpdate behaviour -----
     let shouldAdjustHeight = false;
     if (numberOfMonths !== prevProps.numberOfMonths) {
       this.setCalendarMonthWeeks(currentMonth);
@@ -416,7 +411,7 @@ class DayPicker extends React.PureComponent {
       this.adjustDayPickerHeight(newMonthHeight);
     }
 
-    if (!prevProps.isFocused && isFocused && !focusedDate) {
+    if (!prevProps.isFocused && isFocused && !focusedDateAfterUpdate) {
       this.container.focus();
     }
 
@@ -424,12 +419,10 @@ class DayPicker extends React.PureComponent {
     // new months rendered above the current month don't push the current month out of view.
     if (
       orientation === VERTICAL_SCROLLABLE
-      && !isSameMonth(prevState.currentMonth, currentMonth)
-      && currentMonthScrollTop
+      && snapshot != null
       && this.transitionContainer
     ) {
-      this.transitionContainer.scrollTop = this.transitionContainer.scrollHeight
-        - currentMonthScrollTop;
+      this.transitionContainer.scrollTop = this.transitionContainer.scrollHeight - snapshot;
     }
   }
 

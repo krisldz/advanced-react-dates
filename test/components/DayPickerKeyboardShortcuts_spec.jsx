@@ -12,30 +12,31 @@ import DayPickerKeyboardShortcuts from '../../src/components/DayPickerKeyboardSh
 const event = { preventDefault: sinon.stub(), stopPropagation: sinon.stub() };
 
 describe('DayPickerKeyboardShortcuts', () => {
-  describe('#componentWillReceiveProps', () => {
+  describe('#getDerivedStateFromProps', () => {
     describe('when the phrases have been updated', () => {
       const prevProps = { phrases: { enterKey: 'foo', escape: 'bar', questionMark: 'baz' } };
       const newProps = { phrases: { enterKey: 'bleep', escape: 'blah', questionMark: 'boop' } };
 
       it('updates the keyboardShortcuts', () => {
         const wrapper = shallow(<DayPickerKeyboardShortcuts {...prevProps} />).dive();
-        const prevKeyboardShortcuts = wrapper.instance().keyboardShortcuts;
-        wrapper.instance().componentWillReceiveProps(newProps);
-        const updatedKeyboardShortcuts = wrapper.instance().keyboardShortcuts;
+        const prevKeyboardShortcuts = wrapper.state('keyboardShortcuts');
+        wrapper.setProps(newProps);
+        const updatedKeyboardShortcuts = wrapper.state('keyboardShortcuts');
         expect(prevKeyboardShortcuts).to.not.equal(updatedKeyboardShortcuts);
       });
     });
 
     describe('when the phrases have NOT been updated', () => {
-      const prevProps = { phrases: { enterKey: 'foo', escape: 'bar', questionMark: 'baz' } };
-      const newProps = { phrases: { enterKey: 'foo', escape: 'bar', questionMark: 'baz' } };
+      const phrases = { enterKey: 'foo', escape: 'bar', questionMark: 'baz' };
+      const prevProps = { phrases };
+      const newProps = { phrases };
 
       it('does NOT update the keyboardShortcuts', () => {
         const wrapper = shallow(<DayPickerKeyboardShortcuts {...prevProps} />).dive();
-        const prevKeyboardShortcuts = wrapper.instance().keyboardShortcuts;
-        wrapper.instance().componentWillReceiveProps(newProps);
-        const updatedKeyboardShortcuts = wrapper.instance().keyboardShortcuts;
-        expect(prevKeyboardShortcuts).to.deep.equal(updatedKeyboardShortcuts);
+        const prevKeyboardShortcuts = wrapper.state('keyboardShortcuts');
+        wrapper.setProps(newProps);
+        const updatedKeyboardShortcuts = wrapper.state('keyboardShortcuts');
+        expect(prevKeyboardShortcuts).to.equal(updatedKeyboardShortcuts);
       });
     });
   });

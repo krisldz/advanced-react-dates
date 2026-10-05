@@ -110,6 +110,8 @@ class CalendarDay extends React.PureComponent {
       phrases,
     } = this.props;
 
+    // empty placeholder cell (no day to render); nothing to label
+    // eslint-disable-next-line jsx-a11y/control-has-associated-label
     if (!day) return <td />;
 
     const {

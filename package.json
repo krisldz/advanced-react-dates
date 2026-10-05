@@ -1,7 +1,7 @@
 {
-  "name": "react-dates",
-  "version": "21.8.0",
-  "description": "A responsive and accessible date range picker component built with React",
+  "name": "advanced-react-dates",
+  "version": "1.0.0",
+  "description": "An advanced, responsive, and accessible date range picker based on Airbnb's react-dates",
   "main": "index.js",
   "scripts": {
     "prebuild": "npm run clean",
@@ -41,14 +41,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/react-dates/react-dates.git"
+    "url": "git+https://github.com/krisldz/advanced-react-dates.git"
   },
-  "author": "Maja Wichrowska <maja.wichrowska@airbnb.com>",
+  "author": "Maja Wichrowska <maja.wichrowska@airbnb.com> / Krzysztof Sokołowski <k.sokolowski@birdnet.pl>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/react-dates/react-dates/issues"
+    "url": "https://github.com/krisldz/advanced-react-dates/issues"
   },
-  "homepage": "https://github.com/react-dates/react-dates#readme",
+  "homepage": "https://github.com/krisldz/advanced-react-dates#readme",
   "devDependencies": {
     "@babel/cli": "^7.16.8",
     "@babel/core": "^7.16.12",

@@ -26,6 +26,16 @@ function getCallsByModifier(stub, modifier) {
   return stub.getCalls().filter((call) => call.args[call.args.length - 1] === modifier);
 }
 
+// Enzyme's shallow renderer does not invoke commit-phase lifecycle methods
+// (componentDidUpdate), so we drive the prop-change logic explicitly: update the
+// props (so this.props reflects the new values) and then invoke componentDidUpdate
+// with the previous props, exactly as React would.
+function updateProps(wrapper, newProps) {
+  const prevProps = { ...wrapper.instance().props };
+  wrapper.setProps(newProps);
+  wrapper.instance().componentDidUpdate(prevProps);
+}
+
 describe('DayPickerRangeController', () => {
   afterEach(() => {
     sinon.restore();
@@ -96,7 +106,7 @@ describe('DayPickerRangeController', () => {
     });
   });
 
-  describe('#componentWillReceiveProps', () => {
+  describe('#componentDidUpdate', () => {
     const props = {
       ...DayPickerRangeController.defaultProps,
       onDatesChange() {},
@@ -113,7 +123,7 @@ describe('DayPickerRangeController', () => {
             );
             const wrapper = shallow(<DayPickerRangeController {...props} focusedInput={null} />);
             getStateForNewMonthSpy.resetHistory();
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               initialVisibleMonth: () => moment(),
@@ -130,7 +140,7 @@ describe('DayPickerRangeController', () => {
             getStateForNewMonthStub.returns({ currentMonth, visibleDays: {} });
 
             const wrapper = shallow(<DayPickerRangeController {...props} focusedInput={null} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               initialVisibleMonth: () => moment(),
@@ -148,7 +158,7 @@ describe('DayPickerRangeController', () => {
             getStateForNewMonthStub.returns({ currentMonth, visibleDays });
 
             const wrapper = shallow(<DayPickerRangeController {...props} focusedInput={null} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               initialVisibleMonth: () => moment(),
@@ -165,7 +175,7 @@ describe('DayPickerRangeController', () => {
             );
             const wrapper = shallow(<DayPickerRangeController {...props} focusedInput={null} />);
             getStateForNewMonthSpy.resetHistory();
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: null,
               initialVisibleMonth: () => moment(),
@@ -183,7 +193,7 @@ describe('DayPickerRangeController', () => {
 
             const wrapper = shallow(<DayPickerRangeController {...props} focusedInput={null} />);
             wrapper.setState({ currentMonth });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: null,
               initialVisibleMonth: () => moment(),
@@ -201,7 +211,7 @@ describe('DayPickerRangeController', () => {
 
             const wrapper = shallow(<DayPickerRangeController {...props} focusedInput={null} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: null,
               initialVisibleMonth: () => moment(),
@@ -219,7 +229,7 @@ describe('DayPickerRangeController', () => {
           );
           const wrapper = shallow(<DayPickerRangeController {...props} />);
           getStateForNewMonthSpy.resetHistory();
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             numberOfMonths: 5,
           });
@@ -235,7 +245,7 @@ describe('DayPickerRangeController', () => {
           getStateForNewMonthStub.returns({ currentMonth, visibleDays: {} });
 
           const wrapper = shallow(<DayPickerRangeController {...props} />);
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             numberOfMonths: 5,
           });
@@ -252,7 +262,7 @@ describe('DayPickerRangeController', () => {
           getStateForNewMonthStub.returns({ currentMonth, visibleDays });
 
           const wrapper = shallow(<DayPickerRangeController {...props} />);
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             numberOfMonths: 5,
           });
@@ -265,7 +275,7 @@ describe('DayPickerRangeController', () => {
           const getStateForNewMonthSpy = sinon.spy(DayPickerRangeController.prototype, 'getStateForNewMonth');
           const wrapper = shallow(<DayPickerRangeController {...props} />);
           getStateForNewMonthSpy.resetHistory();
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             enableOutsideDays: true,
           });
@@ -278,7 +288,7 @@ describe('DayPickerRangeController', () => {
           getStateForNewMonthStub.returns({ currentMonth, visibleDays: {} });
 
           const wrapper = shallow(<DayPickerRangeController {...props} />);
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             enableOutsideDays: true,
           });
@@ -292,7 +302,7 @@ describe('DayPickerRangeController', () => {
           getStateForNewMonthStub.returns({ currentMonth, visibleDays });
 
           const wrapper = shallow(<DayPickerRangeController {...props} />);
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             enableOutsideDays: true,
           });
@@ -318,7 +328,7 @@ describe('DayPickerRangeController', () => {
             />
           ));
           deleteModifierFromRangeSpy.resetHistory();
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             startDate: nextStartDate,
           });
@@ -347,7 +357,7 @@ describe('DayPickerRangeController', () => {
           ));
           deleteModifierSpy.resetHistory();
           addModifierSpy.resetHistory();
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             endDate: nextEndDate,
           });
@@ -374,7 +384,7 @@ describe('DayPickerRangeController', () => {
 
           getStateForNewMonthSpy.resetHistory();
 
-          wrapper.instance().componentWillReceiveProps({
+          updateProps(wrapper, {
             ...props,
             endDate: nextEndDate,
           });
@@ -389,7 +399,7 @@ describe('DayPickerRangeController', () => {
             const addModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifier');
             const startDate = today;
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate });
+            updateProps(wrapper, { ...props, startDate });
             expect(getCallsByModifier(addModifierSpy, 'selected-start').length).to.equal(0);
           });
 
@@ -397,7 +407,7 @@ describe('DayPickerRangeController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'deleteModifier');
             const startDate = today;
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate });
+            updateProps(wrapper, { ...props, startDate });
             expect(getCallsByModifier(deleteModifierSpy, 'selected-start').length).to.equal(0);
           });
         });
@@ -408,7 +418,7 @@ describe('DayPickerRangeController', () => {
             const startDate = today;
             const newStartDate = moment().add(1, 'day');
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate: newStartDate });
+            updateProps(wrapper, { ...props, startDate: newStartDate });
             const selectedStartCalls = getCallsByModifier(deleteModifierSpy, 'selected-start');
             expect(selectedStartCalls.length).to.equal(1);
             expect(selectedStartCalls[0].args[1]).to.equal(startDate);
@@ -419,7 +429,7 @@ describe('DayPickerRangeController', () => {
             const startDate = today;
             const newStartDate = moment().add(1, 'day');
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate: newStartDate });
+            updateProps(wrapper, { ...props, startDate: newStartDate });
             const selectedStartCalls = getCallsByModifier(addModifierSpy, 'selected-start');
             expect(selectedStartCalls.length).to.equal(1);
             expect(selectedStartCalls[0].args[1]).to.equal(newStartDate);
@@ -433,7 +443,7 @@ describe('DayPickerRangeController', () => {
             const addModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifier');
             const endDate = today;
             const wrapper = shallow(<DayPickerRangeController {...props} endDate={endDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate });
+            updateProps(wrapper, { ...props, endDate });
             expect(getCallsByModifier(addModifierSpy, 'selected-end').length).to.equal(0);
           });
 
@@ -441,7 +451,7 @@ describe('DayPickerRangeController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'deleteModifier');
             const endDate = today;
             const wrapper = shallow(<DayPickerRangeController {...props} endDate={endDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate });
+            updateProps(wrapper, { ...props, endDate });
             expect(getCallsByModifier(deleteModifierSpy, 'selected-end').length).to.equal(0);
           });
         });
@@ -452,7 +462,7 @@ describe('DayPickerRangeController', () => {
             const endDate = today;
             const newEndDate = moment().add(1, 'day');
             const wrapper = shallow(<DayPickerRangeController {...props} endDate={endDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate: newEndDate });
+            updateProps(wrapper, { ...props, endDate: newEndDate });
             const selectedEndCalls = getCallsByModifier(deleteModifierSpy, 'selected-end');
             expect(selectedEndCalls.length).to.equal(1);
             expect(selectedEndCalls[0].args[1]).to.equal(endDate);
@@ -463,7 +473,7 @@ describe('DayPickerRangeController', () => {
             const endDate = today;
             const newEndDate = moment().add(1, 'day');
             const wrapper = shallow(<DayPickerRangeController {...props} endDate={endDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate: newEndDate });
+            updateProps(wrapper, { ...props, endDate: newEndDate });
             const selectedEndCalls = getCallsByModifier(addModifierSpy, 'selected-end');
             expect(selectedEndCalls.length).to.equal(1);
             expect(selectedEndCalls[0].args[1]).to.equal(newEndDate);
@@ -478,7 +488,7 @@ describe('DayPickerRangeController', () => {
               const deleteModifierFromRangeSpy = sinon.spy(DayPickerRangeController.prototype, 'deleteModifierFromRange');
               const endDate = moment().add(10, 'days');
               const wrapper = shallow(<DayPickerRangeController {...props} startDate={today} />);
-              wrapper.instance().componentWillReceiveProps({ ...props, startDate: null, endDate });
+              updateProps(wrapper, { ...props, startDate: null, endDate });
               const hoverSpanCalls = getCallsByModifier(deleteModifierFromRangeSpy, 'hovered-span');
               expect(hoverSpanCalls.length).to.equal(0);
             });
@@ -489,7 +499,7 @@ describe('DayPickerRangeController', () => {
               const deleteModifierFromRangeSpy = sinon.spy(DayPickerRangeController.prototype, 'deleteModifierFromRange');
               const startDate = today;
               const wrapper = shallow(<DayPickerRangeController {...props} />);
-              wrapper.instance().componentWillReceiveProps({ ...props, startDate, endDate: null });
+              updateProps(wrapper, { ...props, startDate, endDate: null });
               const hoverSpanCalls = getCallsByModifier(deleteModifierFromRangeSpy, 'hovered-span');
               expect(hoverSpanCalls.length).to.equal(0);
             });
@@ -502,7 +512,7 @@ describe('DayPickerRangeController', () => {
               const endDate = today.clone().add(10, 'days');
               const dayAfterEndDate = endDate.clone().add(1, 'day');
               const wrapper = shallow(<DayPickerRangeController {...props} />);
-              wrapper.instance().componentWillReceiveProps({ ...props, startDate, endDate });
+              updateProps(wrapper, { ...props, startDate, endDate });
               const hoverSpanCalls = getCallsByModifier(deleteModifierFromRangeSpy, 'hovered-span');
               expect(hoverSpanCalls.length).to.equal(1);
               expect(hoverSpanCalls[0].args[1]).to.equal(startDate);
@@ -524,7 +534,7 @@ describe('DayPickerRangeController', () => {
               const wrapper = shallow((
                 <DayPickerRangeController {...props} startDate={startDate} endDate={endDate} />
               ));
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate: newStartDate,
                 endDate,
@@ -546,7 +556,7 @@ describe('DayPickerRangeController', () => {
               const wrapper = shallow((
                 <DayPickerRangeController {...props} startDate={startDate} endDate={endDate} />
               ));
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate: newStartDate,
                 endDate,
@@ -569,7 +579,7 @@ describe('DayPickerRangeController', () => {
               const wrapper = shallow((
                 <DayPickerRangeController {...props} startDate={startDate} endDate={endDate} />
               ));
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 endDate: moment().add(11, 'day'),
@@ -593,7 +603,7 @@ describe('DayPickerRangeController', () => {
                 startDate={startDate}
                 endDate={endDate}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 endDate: newEndDate,
@@ -612,7 +622,7 @@ describe('DayPickerRangeController', () => {
           it('calls addModifierToRange with `after-hovered-start`', () => {
             const addModifierToRangeSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifierToRange');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate: moment() });
+            updateProps(wrapper, { ...props, startDate: moment() });
             const afterHoverStartCalls = getCallsByModifier(addModifierToRangeSpy, 'after-hovered-start');
             expect(afterHoverStartCalls.length).to.equal(1);
           });
@@ -622,7 +632,7 @@ describe('DayPickerRangeController', () => {
             const startDate = moment();
             const startSpan = toISODateString(startDate.clone().add(1, 'day'));
             const wrapper = shallow(<DayPickerRangeController {...props} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate });
+            updateProps(wrapper, { ...props, startDate });
             const afterHoverStartCalls = getCallsByModifier(addModifierToRangeSpy, 'after-hovered-start');
             expect(toISODateString(afterHoverStartCalls[0].args[1])).to.equal(startSpan);
           });
@@ -635,7 +645,7 @@ describe('DayPickerRangeController', () => {
             const wrapper = shallow((
               <DayPickerRangeController {...props} minimumNights={minimumNights} />
             ));
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate, minimumNights });
+            updateProps(wrapper, { ...props, startDate, minimumNights });
             const afterHoverStartCalls = getCallsByModifier(addModifierToRangeSpy, 'after-hovered-start');
             expect(toISODateString(afterHoverStartCalls[0].args[2])).to.equal(endSpan);
           });
@@ -646,7 +656,7 @@ describe('DayPickerRangeController', () => {
             const startDate = moment();
             const addModifierToRangeSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifierToRange');
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate });
+            updateProps(wrapper, { ...props, startDate });
             const afterHoverStartCalls = getCallsByModifier(addModifierToRangeSpy, 'after-hovered-start');
             expect(afterHoverStartCalls.length).to.equal(0);
           });
@@ -657,7 +667,7 @@ describe('DayPickerRangeController', () => {
             const startDate = moment();
             const addModifierToRangeSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifierToRange');
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate: null });
+            updateProps(wrapper, { ...props, startDate: null });
             const afterHoverStartCalls = getCallsByModifier(addModifierToRangeSpy, 'after-hovered-start');
             expect(afterHoverStartCalls.length).to.equal(0);
           });
@@ -667,7 +677,7 @@ describe('DayPickerRangeController', () => {
           it('does not call addModifierToRange with `after-hovered-start`', () => {
             const addModifierToRangeSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifierToRange');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               startDate: moment(),
               endDate: moment(),
@@ -691,7 +701,7 @@ describe('DayPickerRangeController', () => {
                 endDate={null}
                 focusedInput={focusedInput}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 focusedInput,
@@ -713,7 +723,7 @@ describe('DayPickerRangeController', () => {
                 focusedInput={focusedInput}
                 minimumNights={minimumNights}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate: moment().add(5, 'days'),
                 focusedInput,
@@ -738,7 +748,7 @@ describe('DayPickerRangeController', () => {
                 focusedInput={START_DATE}
                 minimumNights={minimumNights}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 focusedInput,
@@ -763,7 +773,7 @@ describe('DayPickerRangeController', () => {
                 focusedInput={focusedInput}
                 minimumNights={minimumNights}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput,
                 startDate,
@@ -789,7 +799,7 @@ describe('DayPickerRangeController', () => {
                 startDate={startDate}
                 minimumNights={5}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate: today,
                 focusedInput: START_DATE,
@@ -818,7 +828,7 @@ describe('DayPickerRangeController', () => {
                 day.add(1, 'day');
               }
 
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 focusedInput: START_DATE,
@@ -848,7 +858,7 @@ describe('DayPickerRangeController', () => {
                 startDate={startDate}
                 minimumNights={minimumNights}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 focusedInput: END_DATE,
@@ -868,7 +878,7 @@ describe('DayPickerRangeController', () => {
                 startDate={startDate}
                 minimumNights={minimumNights}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 focusedInput: END_DATE,
@@ -892,7 +902,7 @@ describe('DayPickerRangeController', () => {
                 startDate={startDate}
                 minimumNights={minimumNights}
               />);
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 startDate,
                 focusedInput: END_DATE,
@@ -920,7 +930,7 @@ describe('DayPickerRangeController', () => {
               isOutsideRange={isOutsideRangeStub}
             />);
             const prevCallCount = isOutsideRangeStub.callCount;
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isOutsideRange: isOutsideRangeStub,
             });
@@ -930,7 +940,7 @@ describe('DayPickerRangeController', () => {
           it('calls isOutsideRange if changed', () => {
             const isOutsideRangeStub = sinon.stub();
             const wrapper = shallow(<DayPickerRangeController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isOutsideRange: isOutsideRangeStub,
             });
@@ -956,7 +966,7 @@ describe('DayPickerRangeController', () => {
             const isOutsideRangeStub = sinon.stub();
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isOutsideRange: isOutsideRangeStub,
@@ -969,7 +979,7 @@ describe('DayPickerRangeController', () => {
             const isOutsideRangeStub = sinon.stub().returns(true);
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               isOutsideRange: isOutsideRangeStub,
@@ -983,7 +993,7 @@ describe('DayPickerRangeController', () => {
             const isOutsideRangeStub = sinon.stub().returns(false);
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isOutsideRange: isOutsideRangeStub,
@@ -1003,7 +1013,7 @@ describe('DayPickerRangeController', () => {
               isDayBlocked={isDayBlockedStub}
             />);
             const prevCallCount = isDayBlockedStub.callCount;
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayBlocked: isDayBlockedStub,
             });
@@ -1013,7 +1023,7 @@ describe('DayPickerRangeController', () => {
           it('calls isDayBlocked if changed', () => {
             const isDayBlockedStub = sinon.stub();
             const wrapper = shallow(<DayPickerRangeController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayBlocked: isDayBlockedStub,
             });
@@ -1039,7 +1049,7 @@ describe('DayPickerRangeController', () => {
             const isDayBlockedStub = sinon.stub();
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isDayBlocked: isDayBlockedStub,
@@ -1052,7 +1062,7 @@ describe('DayPickerRangeController', () => {
             const isDayBlockedStub = sinon.stub().returns(true);
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               isDayBlocked: isDayBlockedStub,
@@ -1066,7 +1076,7 @@ describe('DayPickerRangeController', () => {
             const isDayBlockedStub = sinon.stub().returns(false);
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isDayBlocked: isDayBlockedStub,
@@ -1086,7 +1096,7 @@ describe('DayPickerRangeController', () => {
               isDayHighlighted={isDayHighlightedStub}
             />);
             const prevCallCount = isDayHighlightedStub.callCount;
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayHighlighted: isDayHighlightedStub,
             });
@@ -1096,7 +1106,7 @@ describe('DayPickerRangeController', () => {
           it('calls isDayHighlighted if changed', () => {
             const isDayHighlightedStub = sinon.stub();
             const wrapper = shallow(<DayPickerRangeController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayHighlighted: isDayHighlightedStub,
             });
@@ -1122,7 +1132,7 @@ describe('DayPickerRangeController', () => {
             const isDayHighlightedStub = sinon.stub();
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isDayHighlighted: isDayHighlightedStub,
@@ -1135,7 +1145,7 @@ describe('DayPickerRangeController', () => {
             const isDayHighlightedStub = sinon.stub().returns(true);
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isDayHighlighted: isDayHighlightedStub,
@@ -1149,7 +1159,7 @@ describe('DayPickerRangeController', () => {
             const isDayHighlightedStub = sinon.stub().returns(false);
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               isDayHighlighted: isDayHighlightedStub,
@@ -1166,7 +1176,7 @@ describe('DayPickerRangeController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'deleteModifier');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.instance().today = today;
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(deleteModifierSpy, 'today');
             expect(todayCalls.length).to.equal(0);
           });
@@ -1175,7 +1185,7 @@ describe('DayPickerRangeController', () => {
             const addModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifier');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.instance().today = today;
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(addModifierSpy, 'today');
             expect(todayCalls.length).to.equal(0);
           });
@@ -1186,7 +1196,7 @@ describe('DayPickerRangeController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'deleteModifier');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.instance().today = moment().subtract(1, 'day');
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(deleteModifierSpy, 'today');
             expect(todayCalls.length).to.equal(1);
           });
@@ -1195,7 +1205,7 @@ describe('DayPickerRangeController', () => {
             const addModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifier');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             wrapper.instance().today = moment().subtract(1, 'day');
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(addModifierSpy, 'today');
             expect(todayCalls.length).to.equal(1);
           });
@@ -1210,7 +1220,7 @@ describe('DayPickerRangeController', () => {
               {...props}
               getMinNightsForHoverDate={getMinNightsForHoverDateStub}
             />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               getMinNightsForHoverDate: getMinNightsForHoverDateStub,
             });
@@ -1225,7 +1235,7 @@ describe('DayPickerRangeController', () => {
               {...props}
               getMinNightsForHoverDate={getMinNightsForHoverDateStub}
             />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1240,7 +1250,7 @@ describe('DayPickerRangeController', () => {
               getMinNightsForHoverDate={getMinNightsForHoverDateStub}
             />);
             wrapper.setState({ hoverDate: today });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1257,7 +1267,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1279,10 +1289,11 @@ describe('DayPickerRangeController', () => {
                 />,
               );
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
+                isDayBlocked: (day) => isSameDay(day, today),
               });
               const hoveredStartBlockedMinNightsCalls = getCallsByModifier(addModifierToRangeSpy, 'hovered-start-blocked-minimum-nights');
               expect(hoveredStartBlockedMinNightsCalls.length).to.equal(0);
@@ -1296,7 +1307,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1311,7 +1322,7 @@ describe('DayPickerRangeController', () => {
                 {...props}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
               });
@@ -1329,7 +1340,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: END_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1351,7 +1362,7 @@ describe('DayPickerRangeController', () => {
                 />,
               );
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1368,7 +1379,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: END_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1383,7 +1394,7 @@ describe('DayPickerRangeController', () => {
                 {...props}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: END_DATE,
               });
@@ -1402,7 +1413,7 @@ describe('DayPickerRangeController', () => {
               {...props}
               getMinNightsForHoverDate={getMinNightsForHoverDateStub}
             />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               getMinNightsForHoverDate: getMinNightsForHoverDateStub,
             });
@@ -1417,7 +1428,7 @@ describe('DayPickerRangeController', () => {
               {...props}
               getMinNightsForHoverDate={getMinNightsForHoverDateStub}
             />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1432,7 +1443,7 @@ describe('DayPickerRangeController', () => {
               getMinNightsForHoverDate={getMinNightsForHoverDateStub}
             />);
             wrapper.setState({ hoverDate: today });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1449,7 +1460,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1470,10 +1481,11 @@ describe('DayPickerRangeController', () => {
                 />,
               );
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
+                isDayBlocked: (day) => isSameDay(day, today),
               });
               const hoveredStartFirstPossibleEndCalls = getCallsByModifier(addModifierSpy, 'hovered-start-first-possible-end');
               expect(hoveredStartFirstPossibleEndCalls.length).to.equal(0);
@@ -1487,7 +1499,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1502,7 +1514,7 @@ describe('DayPickerRangeController', () => {
                 {...props}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
               });
@@ -1520,7 +1532,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: END_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1541,7 +1553,7 @@ describe('DayPickerRangeController', () => {
                 />,
               );
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: START_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1558,7 +1570,7 @@ describe('DayPickerRangeController', () => {
                 getMinNightsForHoverDate={getMinNightsForHoverDateStub}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: END_DATE,
                 getMinNightsForHoverDate: getMinNightsForHoverDateStub,
@@ -1573,7 +1585,7 @@ describe('DayPickerRangeController', () => {
                 {...props}
               />);
               wrapper.setState({ hoverDate: today });
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 focusedInput: END_DATE,
               });
@@ -1597,7 +1609,7 @@ describe('DayPickerRangeController', () => {
               />,
             );
             const newEndDate = endDate.clone().add(1, 'days');
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               endDate: newEndDate,
             });
@@ -1627,7 +1639,7 @@ describe('DayPickerRangeController', () => {
               (total, visibleDayArray) => total + Object.keys(visibleDayArray).length,
               0,
             );
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               endDate,
               startDate: newStartDate,
@@ -1644,7 +1656,7 @@ describe('DayPickerRangeController', () => {
             const addModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifier');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             const startDate = moment();
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate });
+            updateProps(wrapper, { ...props, startDate });
             const selectedStartNoSelectedEndCalls = getCallsByModifier(addModifierSpy, 'selected-start-no-selected-end');
             expect(selectedStartNoSelectedEndCalls.length).to.equal(1);
             expect(selectedStartNoSelectedEndCalls[0].args[1]).to.equal(startDate);
@@ -1657,7 +1669,7 @@ describe('DayPickerRangeController', () => {
             const startDate = moment();
             const wrapper = shallow(<DayPickerRangeController {...props} startDate={startDate} />);
             const newStartDate = startDate.clone().add(1, 'days');
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate: newStartDate });
+            updateProps(wrapper, { ...props, startDate: newStartDate });
             const selectedStartNoSelectedEndCalls = getCallsByModifier(deleteModifierSpy, 'selected-start-no-selected-end');
             expect(selectedStartNoSelectedEndCalls.length).to.equal(1);
             expect(selectedStartNoSelectedEndCalls[0].args[1]).to.equal(startDate);
@@ -1671,7 +1683,7 @@ describe('DayPickerRangeController', () => {
             const addModifierSpy = sinon.spy(DayPickerRangeController.prototype, 'addModifier');
             const wrapper = shallow(<DayPickerRangeController {...props} />);
             const endDate = moment();
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate });
+            updateProps(wrapper, { ...props, endDate });
             const selectedStartNoSelectedEndCalls = getCallsByModifier(addModifierSpy, 'selected-end-no-selected-start');
             expect(selectedStartNoSelectedEndCalls.length).to.equal(1);
             expect(selectedStartNoSelectedEndCalls[0].args[1]).to.equal(endDate);
@@ -1684,7 +1696,7 @@ describe('DayPickerRangeController', () => {
             const endDate = moment();
             const wrapper = shallow(<DayPickerRangeController {...props} endDate={endDate} />);
             const newEndDate = endDate.clone().add(1, 'days');
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate: newEndDate });
+            updateProps(wrapper, { ...props, endDate: newEndDate });
             const selectedStartNoSelectedEndCalls = getCallsByModifier(deleteModifierSpy, 'selected-end-no-selected-start');
             expect(selectedStartNoSelectedEndCalls.length).to.equal(1);
             expect(selectedStartNoSelectedEndCalls[0].args[1]).to.equal(endDate);
@@ -1697,7 +1709,7 @@ describe('DayPickerRangeController', () => {
             const endDate = moment();
             const wrapper = shallow(<DayPickerRangeController {...props} endDate={endDate} />);
             const newStartDate = endDate.clone().subtract(1, 'days');
-            wrapper.instance().componentWillReceiveProps({ ...props, startDate: newStartDate });
+            updateProps(wrapper, { ...props, startDate: newStartDate });
             const selectedStartNoSelectedEndCalls = getCallsByModifier(deleteModifierSpy, 'selected-end-no-selected-start');
             expect(selectedStartNoSelectedEndCalls.length).to.equal(1);
             expect(selectedStartNoSelectedEndCalls[0].args[1]).to.equal(endDate);
@@ -1720,7 +1732,7 @@ describe('DayPickerRangeController', () => {
             );
             const newEndDate = endDate.clone().add(1, 'days');
             addModifierToRangeSpy.resetHistory();
-            wrapper.instance().componentWillReceiveProps({ ...props, endDate: newEndDate });
+            updateProps(wrapper, { ...props, endDate: newEndDate });
             const beforeHoveredEndCalls = getCallsByModifier(addModifierToRangeSpy, 'before-hovered-end');
             expect(beforeHoveredEndCalls.length).to.equal(1);
             expect(toISODateString(beforeHoveredEndCalls[0].args[1])).to.equal(
@@ -1747,7 +1759,7 @@ describe('DayPickerRangeController', () => {
               );
               const newStartDate = endDate.clone().subtract(3, 'days');
               deleteModifierSpy.resetHistory();
-              wrapper.instance().componentWillReceiveProps({
+              updateProps(wrapper, {
                 ...props,
                 endDate,
                 startDate: newStartDate,
@@ -1776,7 +1788,7 @@ describe('DayPickerRangeController', () => {
             phrases={phrases}
           />);
           wrapper.setState({ phrases: phrasesObject });
-          wrapper.instance().componentWillReceiveProps({ ...props, phrases });
+          updateProps(wrapper, { ...props, phrases });
           expect(wrapper.state().phrases).to.equal(phrasesObject);
         });
       });
@@ -1789,7 +1801,7 @@ describe('DayPickerRangeController', () => {
               phrases={phrases}
             />);
             wrapper.setState({ phrases: {} });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               phrases,
@@ -1806,7 +1818,7 @@ describe('DayPickerRangeController', () => {
               phrases={phrases}
             />);
             wrapper.setState({ phrases: {} });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               phrases,
@@ -1824,7 +1836,7 @@ describe('DayPickerRangeController', () => {
               phrases={phrases}
             />);
             wrapper.setState({ phrases: {} });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               phrases,
             });
@@ -1843,7 +1855,7 @@ describe('DayPickerRangeController', () => {
               phrases={{}}
             />);
             wrapper.setState({ phrases: {} });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: START_DATE,
               phrases,
@@ -1861,7 +1873,7 @@ describe('DayPickerRangeController', () => {
               phrases={{}}
             />);
             wrapper.setState({ phrases: {} });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focusedInput: END_DATE,
               phrases,
@@ -1878,7 +1890,7 @@ describe('DayPickerRangeController', () => {
               phrases={{}}
             />);
             wrapper.setState({ phrases: {} });
-            wrapper.instance().componentWillReceiveProps({ ...props, phrases });
+            updateProps(wrapper, { ...props, phrases });
             const newAvailableDatePhrase = wrapper.state().phrases.chooseAvailableDate;
             expect(newAvailableDatePhrase).to.equal(phrases.chooseAvailableDate);
           });

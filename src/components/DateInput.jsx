@@ -92,6 +92,7 @@ class DateInput extends React.PureComponent {
     this.state = {
       dateString: '',
       isTouchDevice: false,
+      lastDisplayValue: props.displayValue,
     };
 
     this.onChange = this.onChange.bind(this);
@@ -104,13 +105,18 @@ class DateInput extends React.PureComponent {
     this.setState({ isTouchDevice: isTouchDevice() });
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { dateString } = this.state;
-    if (dateString && nextProps.displayValue) {
-      this.setState({
-        dateString: '',
-      });
+  static getDerivedStateFromProps(props, state) {
+    const { displayValue } = props;
+    // Only react to displayValue changes that arrive via props, not to our own
+    // state updates (e.g. the user typing), so a typed draft is never wiped mid-edit.
+    if (displayValue !== state.lastDisplayValue) {
+      const nextState = { lastDisplayValue: displayValue };
+      if (state.dateString && displayValue) {
+        nextState.dateString = '';
+      }
+      return nextState;
     }
+    return null;
   }
 
   componentDidUpdate(prevProps) {

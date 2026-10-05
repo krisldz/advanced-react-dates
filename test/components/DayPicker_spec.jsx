@@ -1068,7 +1068,7 @@ describe('DayPicker', () => {
       });
     });
 
-    describe('#componentWillReceiveProps', () => {
+    describe('#componentDidUpdate visible month sync', () => {
       describe.skip('props.orientation === VERTICAL_SCROLLABLE', () => {
         it('updates state.currentMonthScrollTop', () => {
           sinon.spy(PureDayPicker.prototype, 'setTransitionContainerRef');
@@ -1100,14 +1100,12 @@ describe('DayPicker', () => {
             const newDate = date.clone().add(1, 'month');
             const wrapper = shallow(<PureDayPicker {...props} date={date} />);
             expect(wrapper.state().currentMonth).to.eql(date);
-            wrapper.instance().componentWillReceiveProps(
-              {
-                ...props,
-                date: newDate,
-                initialVisibleMonth() { return newDate; },
-              },
-              {},
-            );
+            const prevProps = { ...wrapper.instance().props };
+            wrapper.setProps({
+              date: newDate,
+              initialVisibleMonth() { return newDate; },
+            });
+            wrapper.instance().componentDidUpdate(prevProps);
             expect(wrapper.state().currentMonth).to.eql(newDate);
           });
         });
@@ -1119,14 +1117,12 @@ describe('DayPicker', () => {
             const newDate = date.clone().add(1, 'month');
             const wrapper = shallow(<PureDayPicker {...props} date={date} />);
             expect(wrapper.state().currentMonth).to.eql(date);
-            wrapper.instance().componentWillReceiveProps(
-              {
-                ...props,
-                date: newDate,
-                initialVisibleMonth() { return newDate; },
-              },
-              {},
-            );
+            const prevProps = { ...wrapper.instance().props };
+            wrapper.setProps({
+              date: newDate,
+              initialVisibleMonth() { return newDate; },
+            });
+            wrapper.instance().componentDidUpdate(prevProps);
             expect(wrapper.state().currentMonth).to.eql(date);
           });
         });

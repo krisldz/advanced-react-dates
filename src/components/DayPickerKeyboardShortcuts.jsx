@@ -82,7 +82,10 @@ class DayPickerKeyboardShortcuts extends React.PureComponent {
     super(...args);
 
     const { phrases } = this.props;
-    this.keyboardShortcuts = getKeyboardShortcuts(phrases);
+    this.state = {
+      phrases,
+      keyboardShortcuts: getKeyboardShortcuts(phrases),
+    };
 
     this.onShowKeyboardShortcutsButtonClick = this.onShowKeyboardShortcutsButtonClick.bind(this);
     this.setShowKeyboardShortcutsButtonRef = this.setShowKeyboardShortcutsButtonRef.bind(this);
@@ -91,11 +94,14 @@ class DayPickerKeyboardShortcuts extends React.PureComponent {
     this.onKeyDown = this.onKeyDown.bind(this);
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { phrases } = this.props;
-    if (nextProps.phrases !== phrases) {
-      this.keyboardShortcuts = getKeyboardShortcuts(nextProps.phrases);
+  static getDerivedStateFromProps(props, state) {
+    if (props.phrases !== state.phrases) {
+      return {
+        phrases: props.phrases,
+        keyboardShortcuts: getKeyboardShortcuts(props.phrases),
+      };
     }
+    return null;
   }
 
   componentDidUpdate() {
@@ -172,6 +178,7 @@ class DayPickerKeyboardShortcuts extends React.PureComponent {
       renderKeyboardShortcutsButton,
       renderKeyboardShortcutsPanel,
     } = this.props;
+    const { keyboardShortcuts } = this.state;
 
     const toggleButtonText = showKeyboardShortcutsPanel
       ? phrases.hideKeyboardShortcutsPanel
@@ -223,7 +230,7 @@ class DayPickerKeyboardShortcuts extends React.PureComponent {
           renderKeyboardShortcutsPanel ? (
             renderKeyboardShortcutsPanel({
               closeButtonAriaLabel: phrases.hideKeyboardShortcutsPanel,
-              keyboardShortcuts: this.keyboardShortcuts,
+              keyboardShortcuts,
               onCloseButtonClick: closeKeyboardShortcutsPanel,
               onKeyDown: this.onKeyDown,
               title: phrases.keyboardShortcuts,
@@ -261,7 +268,7 @@ class DayPickerKeyboardShortcuts extends React.PureComponent {
                 {...css(styles.DayPickerKeyboardShortcuts_list)}
                 id="DayPickerKeyboardShortcuts_description"
               >
-                {this.keyboardShortcuts.map(({ unicode, label, action }) => (
+                {keyboardShortcuts.map(({ unicode, label, action }) => (
                   <KeyboardShortcutRow
                     key={label}
                     unicode={unicode}

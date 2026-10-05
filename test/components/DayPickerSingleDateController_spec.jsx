@@ -22,6 +22,16 @@ function getCallsByModifier(stub, modifier) {
   return stub.getCalls().filter((call) => call.args[call.args.length - 1] === modifier);
 }
 
+// Enzyme's shallow renderer does not invoke commit-phase lifecycle methods
+// (componentDidUpdate), so we drive the prop-change logic explicitly: update the
+// props (so this.props reflects the new values) and then invoke componentDidUpdate
+// with the previous props, exactly as React would.
+function updateProps(wrapper, newProps) {
+  const prevProps = { ...wrapper.instance().props };
+  wrapper.setProps(newProps);
+  wrapper.instance().componentDidUpdate(prevProps);
+}
+
 describe('DayPickerSingleDateController', () => {
   afterEach(() => {
     sinon.restore();
@@ -40,7 +50,7 @@ describe('DayPickerSingleDateController', () => {
     });
   });
 
-  describe('#componentWillReceiveProps', () => {
+  describe('#componentDidUpdate', () => {
     const props = {
       ...DayPickerSingleDateController.defaultProps,
       onDateChange() {},
@@ -55,7 +65,7 @@ describe('DayPickerSingleDateController', () => {
           const newDate = moment().add(1, 'month');
           const wrapper = shallow(<DayPickerSingleDateController {...props} date={date} />);
           expect(wrapper.state()).to.have.property('currentMonth', date);
-          wrapper.instance().componentWillReceiveProps({ ...props, date: newDate });
+          updateProps(wrapper, { ...props, date: newDate });
           expect(wrapper.state()).to.have.property('currentMonth', newDate);
         });
       });
@@ -67,7 +77,7 @@ describe('DayPickerSingleDateController', () => {
           const newDate = moment().add(1, 'month');
           const wrapper = shallow(<DayPickerSingleDateController {...props} date={date} />);
           expect(wrapper.state()).to.have.property('currentMonth', date);
-          wrapper.instance().componentWillReceiveProps({ ...props, date: newDate });
+          updateProps(wrapper, { ...props, date: newDate });
           expect(wrapper.state()).to.have.property('currentMonth', date);
         });
       });
@@ -80,7 +90,7 @@ describe('DayPickerSingleDateController', () => {
             const addModifierSpy = sinon.spy(DayPickerSingleDateController.prototype, 'addModifier');
             const date = today;
             const wrapper = shallow(<DayPickerSingleDateController {...props} date={date} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, date });
+            updateProps(wrapper, { ...props, date });
             expect(getCallsByModifier(addModifierSpy, 'selected').length).to.equal(0);
           });
 
@@ -88,7 +98,7 @@ describe('DayPickerSingleDateController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerSingleDateController.prototype, 'deleteModifier');
             const date = today;
             const wrapper = shallow(<DayPickerSingleDateController {...props} date={date} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, date });
+            updateProps(wrapper, { ...props, date });
             expect(getCallsByModifier(deleteModifierSpy, 'selected').length).to.equal(0);
           });
         });
@@ -99,7 +109,7 @@ describe('DayPickerSingleDateController', () => {
             const date = today;
             const newDate = moment().add(1, 'day');
             const wrapper = shallow(<DayPickerSingleDateController {...props} date={date} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, date: newDate });
+            updateProps(wrapper, { ...props, date: newDate });
             const selectedCalls = getCallsByModifier(deleteModifierSpy, 'selected');
             expect(selectedCalls.length).to.equal(1);
             expect(selectedCalls[0].args[1]).to.equal(date);
@@ -110,7 +120,7 @@ describe('DayPickerSingleDateController', () => {
             const date = today;
             const newDate = moment().add(1, 'day');
             const wrapper = shallow(<DayPickerSingleDateController {...props} date={date} />);
-            wrapper.instance().componentWillReceiveProps({ ...props, date: newDate });
+            updateProps(wrapper, { ...props, date: newDate });
             const selectedStartCalls = getCallsByModifier(addModifierSpy, 'selected');
             expect(selectedStartCalls.length).to.equal(1);
             expect(selectedStartCalls[0].args[1]).to.equal(newDate);
@@ -124,7 +134,7 @@ describe('DayPickerSingleDateController', () => {
             const isBlockedStub = sinon.stub(DayPickerSingleDateController.prototype, 'isBlocked');
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             isBlockedStub.resetHistory();
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
             });
             expect(isBlockedStub.callCount).to.equal(0);
@@ -150,7 +160,7 @@ describe('DayPickerSingleDateController', () => {
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
             isBlockedStub.resetHistory();
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
             });
@@ -162,7 +172,7 @@ describe('DayPickerSingleDateController', () => {
             sinon.stub(DayPickerSingleDateController.prototype, 'isBlocked').returns(true);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
             });
@@ -175,7 +185,7 @@ describe('DayPickerSingleDateController', () => {
             sinon.stub(DayPickerSingleDateController.prototype, 'isBlocked').returns(false);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
             });
@@ -196,7 +206,7 @@ describe('DayPickerSingleDateController', () => {
               />
             ));
             const prevCallCount = isOutsideRangeStub.callCount;
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isOutsideRange: isOutsideRangeStub,
             });
@@ -206,7 +216,7 @@ describe('DayPickerSingleDateController', () => {
           it('calls isOutsideRange if changed', () => {
             const isOutsideRangeStub = sinon.stub();
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isOutsideRange: isOutsideRangeStub,
             });
@@ -232,12 +242,15 @@ describe('DayPickerSingleDateController', () => {
             const isOutsideRangeStub = sinon.stub();
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isOutsideRange: isOutsideRangeStub,
             });
-            expect(isOutsideRangeStub.callCount).to.equal(numVisibleDays);
+            // Once per day via this.isBlocked() and once per day via the direct
+            // blocked-out-of-range check; in componentDidUpdate this.props already
+            // holds the new isOutsideRange, so both observe the stub.
+            expect(isOutsideRangeStub.callCount).to.equal(numVisibleDays * 2);
           });
 
           it('if isOutsideRange(day) is true calls addModifier with `blocked-out-of-range` for each day', () => {
@@ -248,7 +261,7 @@ describe('DayPickerSingleDateController', () => {
             const isOutsideRangeStub = sinon.stub().returns(true);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isOutsideRange: isOutsideRangeStub,
@@ -268,7 +281,7 @@ describe('DayPickerSingleDateController', () => {
             const isOutsideRangeStub = sinon.stub().returns(false);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isOutsideRange: isOutsideRangeStub,
@@ -291,7 +304,7 @@ describe('DayPickerSingleDateController', () => {
               isDayBlocked={isDayBlockedStub}
             />);
             const prevCallCount = isDayBlockedStub.callCount;
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayBlocked: isDayBlockedStub,
             });
@@ -301,7 +314,7 @@ describe('DayPickerSingleDateController', () => {
           it('calls isDayBlocked if changed', () => {
             const isDayBlockedStub = sinon.stub();
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayBlocked: isDayBlockedStub,
             });
@@ -327,12 +340,15 @@ describe('DayPickerSingleDateController', () => {
             const isDayBlockedStub = sinon.stub();
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isDayBlocked: isDayBlockedStub,
             });
-            expect(isDayBlockedStub.callCount).to.equal(numVisibleDays);
+            // Once per day via this.isBlocked() and once per day via the direct
+            // blocked-calendar check; in componentDidUpdate this.props already holds
+            // the new isDayBlocked, so both observe the stub.
+            expect(isDayBlockedStub.callCount).to.equal(numVisibleDays * 2);
           });
 
           it('if isDayBlocked(day) is true calls addModifier with `blocked-calendar` for each day', () => {
@@ -340,7 +356,7 @@ describe('DayPickerSingleDateController', () => {
             const isDayBlockedStub = sinon.stub().returns(true);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isDayBlocked: isDayBlockedStub,
@@ -354,7 +370,7 @@ describe('DayPickerSingleDateController', () => {
             const isDayBlockedStub = sinon.stub().returns(false);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isDayBlocked: isDayBlockedStub,
@@ -374,7 +390,7 @@ describe('DayPickerSingleDateController', () => {
               isDayHighlighted={isDayHighlightedStub}
             />);
             const prevCallCount = isDayHighlightedStub.callCount;
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayHighlighted: isDayHighlightedStub,
             });
@@ -384,7 +400,7 @@ describe('DayPickerSingleDateController', () => {
           it('calls isDayHighlighted if changed', () => {
             const isDayHighlightedStub = sinon.stub();
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               isDayHighlighted: isDayHighlightedStub,
             });
@@ -410,7 +426,7 @@ describe('DayPickerSingleDateController', () => {
             const isDayHighlightedStub = sinon.stub();
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isDayHighlighted: isDayHighlightedStub,
@@ -423,7 +439,7 @@ describe('DayPickerSingleDateController', () => {
             const isDayHighlightedStub = sinon.stub().returns(true);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isDayHighlighted: isDayHighlightedStub,
@@ -437,7 +453,7 @@ describe('DayPickerSingleDateController', () => {
             const isDayHighlightedStub = sinon.stub().returns(false);
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.setState({ visibleDays });
-            wrapper.instance().componentWillReceiveProps({
+            updateProps(wrapper, {
               ...props,
               focused: true,
               isDayHighlighted: isDayHighlightedStub,
@@ -454,7 +470,7 @@ describe('DayPickerSingleDateController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerSingleDateController.prototype, 'deleteModifier');
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.instance().today = today;
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(deleteModifierSpy, 'today');
             expect(todayCalls.length).to.equal(0);
           });
@@ -463,7 +479,7 @@ describe('DayPickerSingleDateController', () => {
             const addModifierSpy = sinon.spy(DayPickerSingleDateController.prototype, 'addModifier');
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.instance().today = today;
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(addModifierSpy, 'today');
             expect(todayCalls.length).to.equal(0);
           });
@@ -474,7 +490,7 @@ describe('DayPickerSingleDateController', () => {
             const deleteModifierSpy = sinon.spy(DayPickerSingleDateController.prototype, 'deleteModifier');
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.instance().today = moment().subtract(1, 'day');
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(deleteModifierSpy, 'today');
             expect(todayCalls.length).to.equal(1);
           });
@@ -483,7 +499,7 @@ describe('DayPickerSingleDateController', () => {
             const addModifierSpy = sinon.spy(DayPickerSingleDateController.prototype, 'addModifier');
             const wrapper = shallow(<DayPickerSingleDateController {...props} />);
             wrapper.instance().today = moment().subtract(1, 'day');
-            wrapper.instance().componentWillReceiveProps(props);
+            updateProps(wrapper, props);
             const todayCalls = getCallsByModifier(addModifierSpy, 'today');
             expect(todayCalls.length).to.equal(1);
           });

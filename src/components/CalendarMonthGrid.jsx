@@ -120,13 +120,15 @@ class CalendarMonthGrid extends React.PureComponent {
     const withoutTransitionMonths = props.orientation === VERTICAL_SCROLLABLE;
     this.state = {
       months: getMonths(props.initialMonth, props.numberOfMonths, withoutTransitionMonths),
+      initialMonth: props.initialMonth,
+      numberOfMonths: props.numberOfMonths,
+      locale: moment.locale(),
     };
 
     this.isTransitionEndSupported = isTransitionEndSupported();
     this.onTransitionEnd = this.onTransitionEnd.bind(this);
     this.setContainerRef = this.setContainerRef.bind(this);
 
-    this.locale = moment.locale();
     this.onMonthSelect = this.onMonthSelect.bind(this);
     this.onYearSelect = this.onYearSelect.bind(this);
   }
@@ -139,14 +141,15 @@ class CalendarMonthGrid extends React.PureComponent {
     );
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { initialMonth, numberOfMonths, orientation } = nextProps;
-    const { months } = this.state;
-
+  static getDerivedStateFromProps(props, state) {
+    const { initialMonth, numberOfMonths, orientation } = props;
     const {
+      months,
       initialMonth: prevInitialMonth,
       numberOfMonths: prevNumberOfMonths,
-    } = this.props;
+      locale: prevLocale,
+    } = state;
+
     const hasMonthChanged = !prevInitialMonth.isSame(initialMonth, 'month');
     const hasNumberOfMonthsChanged = prevNumberOfMonths !== numberOfMonths;
     let newMonths = months;
@@ -171,15 +174,21 @@ class CalendarMonthGrid extends React.PureComponent {
       }
 
       const momentLocale = moment.locale();
-      if (this.locale !== momentLocale) {
-        this.locale = momentLocale;
-        newMonths = newMonths.map((m) => m.locale(this.locale));
+      let locale = prevLocale;
+      if (locale !== momentLocale) {
+        locale = momentLocale;
+        newMonths = newMonths.map((m) => m.locale(locale));
       }
 
-      this.setState({
+      return {
         months: newMonths,
-      });
+        initialMonth,
+        numberOfMonths,
+        locale,
+      };
     }
+
+    return null;
   }
 
   componentDidUpdate() {

@@ -223,7 +223,7 @@ export default class DayPickerSingleDateController extends React.PureComponent {
     this.isTouchDevice = isTouchDevice();
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentDidUpdate(prevProps) {
     const {
       date,
       focused,
@@ -233,7 +233,7 @@ export default class DayPickerSingleDateController extends React.PureComponent {
       initialVisibleMonth,
       numberOfMonths,
       enableOutsideDays,
-    } = nextProps;
+    } = this.props;
     const {
       isOutsideRange: prevIsOutsideRange,
       isDayBlocked: prevIsDayBlocked,
@@ -243,7 +243,7 @@ export default class DayPickerSingleDateController extends React.PureComponent {
       initialVisibleMonth: prevInitialVisibleMonth,
       focused: prevFocused,
       date: prevDate,
-    } = this.props;
+    } = prevProps;
     let { visibleDays } = this.state;
 
     let recomputeOutsideRange = false;
@@ -284,7 +284,7 @@ export default class DayPickerSingleDateController extends React.PureComponent {
         && !isDayVisible(date, prevCurrentMonth, numberOfMonths)
       )
     ) {
-      const newMonthState = this.getStateForNewMonth(nextProps);
+      const newMonthState = this.getStateForNewMonth(this.props);
       const { currentMonth } = newMonthState;
       ({ visibleDays } = newMonthState);
       this.setState({
@@ -355,10 +355,6 @@ export default class DayPickerSingleDateController extends React.PureComponent {
         },
       });
     }
-  }
-
-  componentWillUpdate() {
-    this.today = moment();
   }
 
   onDayClick(day, e) {

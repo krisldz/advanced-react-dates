@@ -121,13 +121,13 @@ describe('DateInput', () => {
     });
   });
 
-  describe('#componentWillReceiveProps', () => {
+  describe('#getDerivedStateFromProps', () => {
     describe('nextProps.displayValue exists', () => {
       it('sets state.dateString to \'\'', () => {
         const dateString = 'foo123';
         const wrapper = shallow(<DateInput id="date" />).dive();
         wrapper.setState({ dateString });
-        wrapper.instance().componentWillReceiveProps({ displayValue: '1991-07-13' });
+        wrapper.setProps({ displayValue: '1991-07-13' });
         expect(wrapper.state()).to.have.property('dateString', '');
       });
     });
@@ -137,7 +137,17 @@ describe('DateInput', () => {
         const dateString = 'foo123';
         const wrapper = shallow(<DateInput id="date" />).dive();
         wrapper.setState({ dateString });
-        wrapper.instance().componentWillReceiveProps({ displayValue: null });
+        wrapper.setProps({ displayValue: null });
+        expect(wrapper.state()).to.have.property('dateString', dateString);
+      });
+    });
+
+    describe('a typed draft is not wiped when displayValue is unchanged', () => {
+      it('keeps state.dateString on an unrelated props update', () => {
+        const dateString = 'foo123';
+        const wrapper = shallow(<DateInput id="date" displayValue="1991-07-13" />).dive();
+        wrapper.setState({ dateString });
+        wrapper.setProps({ readOnly: true });
         expect(wrapper.state()).to.have.property('dateString', dateString);
       });
     });
